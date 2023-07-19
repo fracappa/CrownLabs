@@ -76,7 +76,6 @@
     group: "{{ ansible_user }}"
     mode: '0644'
 
-
 - name: Download the binary file
   command: |
           curl -o /home/crownlabs/GNS3/images/IOS/c2691-advipservicesk9-mz.124-25c.bin
@@ -108,22 +107,38 @@
 - name: Copy JSON request file 
   copy:
     src: "{{ role_path }}/files/cisco-c2961.json"
-    dest: /tmp/json_file.json
+    dest: /tmp/cisco-c2961.json
     mode: '0644'
 
 - name: Create new template using GNS3 API
-  command: sudo  curl -X POST "http://localhost:3080/v2/templates" -d @/tmp/json_file.json
+  command: sudo  curl -X POST "http://localhost:3080/v2/templates" -d @/tmp/cisco-c2961.json
 
 - name: Remove JSON request file 
   file:
     path: /tmp/json_file.json
     state: absent
 
-- name: Copy the README file
+
+- name: Copy JSON request file 
   copy:
-    src: "{{ role_path }}/files/README_GNS3"
-    dest: /home/{{ ansible_user }}/Desktop
-    owner: "{{ ansible_user }}"
-    group: "{{ ansible_user }}"
+    src: "{{ role_path }}/files/docker.json"
+    dest: /tmp/json_file.json
     mode: '0644'
+
+- name: Create new template using GNS3 API
+  command: sudo  curl -X POST "http://localhost:3080/v2/templates" -d @/tmp/docker.json
+
+- name: Remove JSON request file 
+  file:
+    path: /tmp/docker.json
+    state: absent
+
+
+# - name: Copy the README file
+#   copy:
+#     src: "{{ role_path }}/files/README_GNS3"
+#     dest: /home/{{ ansible_user }}/Desktop
+#     owner: "{{ ansible_user }}"
+#     group: "{{ ansible_user }}"
+#     mode: '0644'
 
