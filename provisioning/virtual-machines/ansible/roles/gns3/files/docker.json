@@ -1,5 +1,5 @@
 {
-    "name": "network-multitool",
+    "name": "Linux host",
     "compute_id": "local",
     "template_type": "docker",
     "adapters": 1,
