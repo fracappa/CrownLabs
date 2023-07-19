@@ -75,3 +75,55 @@
     owner: "{{ ansible_user }}"
     group: "{{ ansible_user }}"
     mode: '0644'
+
+
+- name: Download the binary file
+  command: |
+          curl -o /home/crownlabs/GNS3/images/IOS/c2691-advipservicesk9-mz.124-25c.bin
+          https://owncloud.ipv6.polito.it:8080/index.php/s/OobvABlroRZcEWJ/download
+
+- name: Unzip the file
+  shell: unzip -p /home/crownlabs/GNS3/images/IOS/c2691-advipservicesk9-mz.124-25c.bin >  /home/crownlabs/GNS3/images/IOS/c2691-advipservicesk9-mz.124-25c.image
+  ignore_errors: yes
+
+- name: Remove the archive file
+  file:
+    path: /home/crownlabs/GNS3/images/IOS/c2691-advipservicesk9-mz.124-25c.bin
+    state: absent
+
+# The following two steps are used to start gns3 as a deamon
+
+- name: Copy the gns3 service file
+  copy:
+    src: "{{ role_path }}/files/gns3.service"
+    dest: /etc/systemd/system/gns3.service
+    mode: '0755'
+
+- name: Enable and start the gns3 service
+  systemd:
+    name: gns3
+    state: started
+    enabled: yes
+
+- name: Copy JSON request file 
+  copy:
+    src: "{{ role_path }}/files/cisco-c2961.json"
+    dest: /tmp/json_file.json
+    mode: '0644'
+
+- name: Create new template using GNS3 API
+  command: sudo  curl -X POST "http://localhost:3080/v2/templates" -d @/tmp/json_file.json
+
+- name: Remove JSON request file 
+  file:
+    path: /tmp/json_file.json
+    state: absent
+
+- name: Copy the README file
+  copy:
+    src: "{{ role_path }}/files/README_GNS3"
+    dest: /home/{{ ansible_user }}/Desktop
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: '0644'
+
