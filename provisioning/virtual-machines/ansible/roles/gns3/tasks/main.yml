@@ -76,69 +76,107 @@
     group: "{{ ansible_user }}"
     mode: '0644'
 
+### The following tasks are due to the previous manual setup of GNS3 environment
+
+## 1.  Download the Cisco IOS Image
+
+# 1.1 Actual download 
 - name: Download the binary file
   command: |
-          curl -o /home/crownlabs/GNS3/images/IOS/c2691-advipservicesk9-mz.124-25c.bin
+          curl -o /home/{{ ansible_user }}/GNS3/images/IOS/c2691-advipservicesk9-mz.124-25c.bin
           https://owncloud.ipv6.polito.it:8080/index.php/s/OobvABlroRZcEWJ/download
 
+# 1.2 Decompress the file from .bin to .image
 - name: Unzip the file
-  shell: unzip -p /home/crownlabs/GNS3/images/IOS/c2691-advipservicesk9-mz.124-25c.bin >  /home/crownlabs/GNS3/images/IOS/c2691-advipservicesk9-mz.124-25c.image
+  shell: > 
+        unzip -p /home/crownlabs/GNS3/images/IOS/c2691-advipservicesk9-mz.124-25c.bin > 
+        /home/crownlabs/GNS3/images/IOS/c2691-advipservicesk9-mz.124-25c.image
   ignore_errors: yes
 
+# 1.3 Remove the compressed .bin file
 - name: Remove the archive file
   file:
     path: /home/crownlabs/GNS3/images/IOS/c2691-advipservicesk9-mz.124-25c.bin
     state: absent
 
-# The following two steps are used to start gns3 as a deamon
+## 2.  Create a new template for the Cisco 2691 router
 
+# GNS3 server is usually launched though UI. A terminal launch is needed.
+
+# 2.1 Create a gns3.service file which is going to be handled via systemd
 - name: Copy the gns3 service file
   copy:
     src: "{{ role_path }}/files/gns3.service"
     dest: /etc/systemd/system/gns3.service
     mode: '0755'
 
+# 2.2 Enable and start the new gns3 service
 - name: Enable and start the gns3 service
   systemd:
     name: gns3
     state: started
     enabled: yes
 
-- name: Copy JSON request file 
+# 2.3 The GNS3 server needs some seconds to be ready
+ - name: Introduce a sleep delay of 10 seconds
+    pause:
+      seconds: 10
+
+# 2.4 Create the request body to be used in Cisco C2961 template creation
+- name: Copy Cisco 2961 template request body
   copy:
     src: "{{ role_path }}/files/cisco-c2961.json"
     dest: /tmp/cisco-c2961.json
     mode: '0644'
 
+# 2.5 Performing the request to the GNS3 server
 - name: Create new template using GNS3 API
   command: sudo  curl -X POST "http://localhost:3080/v2/templates" -d @/tmp/cisco-c2961.json
 
+# 2.5 Remove the temporary file used to hold the request body
 - name: Remove JSON request file 
   file:
     path: /tmp/json_file.json
     state: absent
 
+## 3  Configure the Xfce4 terminal in GNS3
 
-- name: Copy JSON request file 
+# 3.1 The jq package is needed for this operation
+- name: Install jq package
+  apt:
+    name: jq
+    state: present
+
+# 3.2 Modify the proper config file
+- name: Update the value using jq
+  shell: >
+          jq '.MainWindow.telnet_console_command = "xfce4-terminal --tab -T \"%d\" -e \"telnet %h %p\""' 
+          /home/crownlabs/.config/GNS3/2.2/gns3_gui.conf > /home/crownlabs/.config/GNS3/2.2/gns3_gui.conf.tmp && 
+          mv /home/crownlabs/.config/GNS3/2.2/gns3_gui.conf.tmp /home/crownlabs/.config/GNS3/2.2/gns3_gui.conf
+
+## 4  Add the network-multitool docker image to the list of end devices
+
+# 4.1 Create the request body to be used in Docker template creation
+- name:  Copy Docker template request body
   copy:
     src: "{{ role_path }}/files/docker.json"
     dest: /tmp/json_file.json
     mode: '0644'
 
+# 4.2 Performing the request to the GNS3 server
 - name: Create new template using GNS3 API
   command: sudo  curl -X POST "http://localhost:3080/v2/templates" -d @/tmp/docker.json
 
+# 4.3 Remove the temporary file used to hold the request body
 - name: Remove JSON request file 
   file:
     path: /tmp/docker.json
     state: absent
 
-
-# - name: Copy the README file
-#   copy:
-#     src: "{{ role_path }}/files/README_GNS3"
-#     dest: /home/{{ ansible_user }}/Desktop
-#     owner: "{{ ansible_user }}"
-#     group: "{{ ansible_user }}"
-#     mode: '0644'
-
+- name: Copy the README file
+  copy:
+    src: "{{ role_path }}/files/README_GNS3"
+    dest: /home/{{ ansible_user }}/Desktop
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: '0644'
