@@ -118,9 +118,9 @@
     enabled: yes
 
 # 2.3 The GNS3 server needs some seconds to be ready
- - name: Introduce a sleep delay of 10 seconds
-    pause:
-      seconds: 10
+- name: Introduce a sleep delay of 10 seconds
+  pause:
+    seconds: 10
 
 # 2.4 Create the request body to be used in Cisco C2961 template creation
 - name: Copy Cisco 2961 template request body
